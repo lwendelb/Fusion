@@ -13,9 +13,9 @@ def CalcCos(x, params, share):
     return y
 
 lam = np.pi
-A_sin = 5.
+A_sin = 8.
 A_cos = 4.7
-phi_sin = np.pi/2
+phi_sin = np.pi/3
 phi_cos = np.pi/2
 
 x = np.arange(0.,2*np.pi,0.01)
