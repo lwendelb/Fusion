@@ -20,6 +20,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import CalculateSinCos as Calc
 import FmcmcSC as MCMC
+import csv
 
 def par2z(par,lower,upper):
     z = norm.ppf((par-lower)/(upper-lower))
@@ -50,40 +51,48 @@ print z2par(init_z,lower,upper)
 
 bx = 1
 bn = 1
-taux = 10
-taun = 10
+taux = 1.
+taun = 0.5
 yx = np.random.normal(Calc.ysin_mean,1/np.sqrt(taux))
 yn = np.random.normal(Calc.ycos_mean,1/np.sqrt(taun))
+
 
 '''
 plt.figure(1)
 plt.plot(Calc.x,Calc.ysin_mean)
 plt.plot(Calc.x,yx,'r+')
-plt.ylabel("Intensity")
-plt.xlabel("Scattering Angle")
+plt.ylabel("Amplitude")
+plt.xlabel("x")
 plt.figure(2)
 plt.plot(Calc.x,Calc.ycos_mean)
 plt.plot(Calc.x,yn,'r+')
-plt.ylabel("Intensity")
-plt.xlabel("Scattering Angle")
+plt.ylabel("Amplitude")
+plt.xlabel("x")
 plt.show()
 '''
 
-curr=10000
-burn = 0
+curr=15000
+burn = 5000
 results = MCMC.nlDRAM(paramList=paramList, init_z=init_z, lower=lower,
-upper=upper, y_x=yx, y_n=yn, x=Calc.x, L=20, shrinkage=0.01, s_p=(2.4**2),
-epsilon=1e-10, m0=0, sd0=1, c_y=0.1, d_y=0.1, c_g=0.1, d_g=0.1, c_b=0.1,
+upper=upper, y_x=yx, y_n=yn, x=Calc.x, L=20, shrinkage=0.05, s_p=(2.4**2),
+epsilon=1e-10, m0=0, sd0=1, c_y=0.1, d_y=0.1, c_g=1, d_g=1, c_b=0.1,
 d_b=0.1, adapt=200, thin=1, iters=curr, burn=burn, update=1000, plot=False, fix=False)
-import csv
-with open('C:\Users\Laura\Documents\R\Research\sc.csv', 'wb') as f:
+
+with open('C:\Users\Laura\Documents\Fusion-master\sincosresults2.csv', 'wb') as f:
     writer = csv.writer(f)
     writer.writerows(results[0])
+
+with open('C:\Users\Laura\Documents\Fusion-master\/taux.csv', 'wb') as f:
+    writer = csv.writer(f)
+    writer.writerows(np.array([results[2]]))
+with open('C:\Users\Laura\Documents\Fusion-master\/taun.csv', 'wb') as f:
+    writer = csv.writer(f)
+    writer.writerows(np.array([results[3]]))
 
 '''
 results = MCMC.nlDRAM(paramList, init_z, lower, upper, y_x=yx, y_n=yn, x=Calc.x, L=20, shrinkage=0.2, s_p=(2.4**2), epsilon=1e-4, m0=0, sd0=1, c_y=0.1, d_y=0.1, c_g=0.1, d_g=0.1, c_b=0.1, d_b=0.1, adapt=20, thin=1, iters=100, burn=0, update=10, plot=False, fix=False)
 import csv
-with open('C:\Users\Laura\Documents\R\Research\pars2.csv', 'wb') as f:
+with open('C:\Users\Laura\Documents\R\Research\sincosresults_5_10_2018_9_52.csv', 'wb') as f:
     writer = csv.writer(f)
     writer.writerows(results[0])
 with open('C:\Users\Laura\Documents\R\Research\VarS12.csv', 'wb') as f:
@@ -119,6 +128,17 @@ plt.plot(keep_params[range(curr_keep), 4], 'k')
 plt.plot(np.repeat(truth[4],curr_keep),'r')
 plt.xlabel("Iteration")
 plt.ylabel(paramList[4])
+
+plt.figure(4, figsize=(20,10))
+plt.subplot(121)
+plt.plot(results[2], 'k')
+plt.xlabel("Iteration")
+plt.ylabel("taux")
+plt.subplot(122)
+plt.plot(results[3], 'k')
+plt.xlabel("Iteration")
+plt.ylabel("taun")
+
 '''
 plt.subplot(236)
 plt.plot(keep_params[range(curr_keep), 5], 'k')

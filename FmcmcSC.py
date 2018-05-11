@@ -20,6 +20,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import CalculateSinCos as Calc
 
+Calc_x = Calc.CalcSin
+Calc_n = Calc.CalcCos
+
+
 # Source mean function process from GSAS_Calculator_Opt.py
 #import GSAS_Calculator_Opt as gsas
 
@@ -42,14 +46,14 @@ def prior_loglike(par, m0, sd0):
     return -0.5*(sd0**(-2))*np.inner(par-m0, par-m0)
 
 # Log of the posterior distribution
-def logf(y_x,y_n, x, BG_x,BG_n, y_calc_x, y_calc_n, paramList, z, lower, upper, scale_x, scale_n, tau_y_x, tau_y_n, m0, sd0,n_share=1,n_x=2,n_n=2):
+def logf(y_x,y_n, x, BG_x,BG_n, y_calc_x, y_calc_n, paramList, z, lower, upper, scale_x, scale_n, tau_y_x, tau_y_n, m0, sd0,q_share=1,q_x=2,q_n=2):
     # Update the calculator to reflect the current parameter estimates
     params = z2par(z=z, lower=lower, upper=upper)
-    share = params[0:n_share]
-    params_x = params[n_share:(n_share+n_x)]
-    params_n = params[(n_share+n_x):(n_share+n_x+n_n)]
-    z_x = (z[0:(n_share+n_x)])
-    z_n = np.concatenate((np.array(z[0:n_share]),np.array(z[(n_share+n_x):(n_share+n_x+n_n)])))
+    share = params[0:q_share]
+    params_x = params[q_share:(q_share+q_x)]
+    params_n = params[(q_share+q_x):(q_share+q_x+q_n)]
+    z_x = (z[0:(q_share+q_x)])
+    z_n = np.concatenate((np.array(z[0:q_share]),np.array(z[(q_share+q_x):(q_share+q_x+q_n)])))
     # Calculate the potential energy
     R_x = y_x-BG_x-y_calc_x               # Calculate residuals
     S_x = np.inner(R_x/np.sqrt(scale_x), R_x/np.sqrt(scale_x))  # Calculate weighted SSE
@@ -141,9 +145,9 @@ def nlDRAM(paramList, init_z, lower, upper, y_x=None, y_n=None, x=None, L=20, sh
     n_n = len(y_n)
     q = len(init_z)  # Number of parameters of interest
 
-    n_share = 1
-    n_x = 2
-    n_n = 2
+    q_share = 1
+    q_x = 2
+    q_n = 2
 
     # Smooth the observed Ys on the Xs, patch for negative or 0 values
     y_x_sm = lowess(endog=y_x, exog=x, frac=6.0/len(x), return_sorted=False)
@@ -163,8 +167,8 @@ def nlDRAM(paramList, init_z, lower, upper, y_x=None, y_n=None, x=None, L=20, sh
     # Initialize parameter values
     z = np.array(init_z, copy=True)                     # Latent process
     params = z2par(z=init_z, lower=lower, upper=upper)  # Parameters of interest
-    tau_y_x = 10                                          # Error variance for Y
-    tau_y_n = 10
+    tau_y_x = 1.                                          # Error variance for Y
+    tau_y_n = 0.5
     #b_x = 1                                               # Contribution of y_sm
     #b_n = 1
     #gamma_x = np.ones(L)                                  # Loadings
@@ -174,9 +178,9 @@ def nlDRAM(paramList, init_z, lower, upper, y_x=None, y_n=None, x=None, L=20, sh
     #BG_x = np.matmul(B, gamma_x)                            # Background intensity
     #BG_n = np.matmul(B, gamma_n)
 
-    share = params[0:n_share]
-    params_x = params[n_share:(n_share+n_x)]
-    params_n = params[(n_share+n_x):(n_share+n_x+n_n)]
+    share = params[0:q_share]
+    params_x = params[q_share:(q_share+q_x)]
+    params_n = params[(q_share+q_x):(q_share+q_x+q_n)]
     y_calc_x = Calc.CalcSin(x,params_x,share)
     y_calc_n = Calc.CalcCos(x,params_n,share)
 
@@ -197,7 +201,7 @@ def nlDRAM(paramList, init_z, lower, upper, y_x=None, y_n=None, x=None, L=20, sh
 
     # Initialize covariance for proposal distribution
     varS1 = np.diag(0.0000005*np.ones(q))
-    varS1 = np.diag(0.05*np.ones(q))
+    varS1 = np.diag(.05*np.ones(q))
 
     # Set up counters for the parameters of interest
     att = att_S2 = acc_S1 = acc_S2 = 0  # Attempts / acceptances counters
@@ -250,11 +254,11 @@ def nlDRAM(paramList, init_z, lower, upper, y_x=None, y_n=None, x=None, L=20, sh
         #Stage 1:
         can_z1 = np.random.multivariate_normal(mean=z, cov=varS1)
         params1 = z2par(z=can_z1, lower=lower, upper=upper)  # Update params
-        share = params1[0:n_share]
-        params_x = params1[n_share:(n_share+n_x)]
-        params_n = params1[(n_share+n_x):(n_share+n_x+n_n)]
-        y_calc_x1 = Calc.CalcSin(x,params_x,share)
-        y_calc_n1 = Calc.CalcCos(x,params_n,share)
+        share = params1[0:q_share]
+        params_x = params1[q_share:(q_share+q_x)]
+        params_n = params1[(q_share+q_x):(q_share+q_x+q_n)]
+        y_calc_x1 = Calc_x(x,params_x,share)
+        y_calc_n1 = Calc_n(x,params_n,share)
         can1_ll = logf(y_x=y_x, y_n=y_n, x=x, BG_x=BG_x, BG_n=BG_n, y_calc_x=y_calc_x1, y_calc_n=y_calc_n1, paramList=paramList, z=can_z1, lower=lower, upper=upper, scale_x=var_scale_x, scale_n=var_scale_n, tau_y_x=tau_y_x, tau_y_n=tau_y_n, m0=m0, sd0=sd0)
         cur_ll = logf(y_x=y_x, y_n=y_n, x=x, BG_x=BG_x, BG_n=BG_n, y_calc_x=y_calc_x, y_calc_n=y_calc_n, paramList=paramList, z=z, lower=lower, upper=upper, scale_x=var_scale_x, scale_n=var_scale_n, tau_y_x=tau_y_x, tau_y_n=tau_y_n, m0=m0, sd0=sd0)
         R1 = can1_ll - cur_ll
@@ -266,22 +270,22 @@ def nlDRAM(paramList, init_z, lower, upper, y_x=None, y_n=None, x=None, L=20, sh
             acc_S1 += 1
             z = np.array(can_z1, copy=True)                # Update latent
             params = z2par(z=z, lower=lower, upper=upper)  # Update params
-            share = params[0:n_share]
-            params_x = params[n_share:(n_share+n_x)]
-            params_n = params[(n_share+n_x):(n_share+n_x+n_n)]
-            y_calc_x = Calc.CalcSin(x,params_x,share)
-            y_calc_n = Calc.CalcCos(x,params_n,share)
+            share = params[0:q_share]
+            params_x = params[q_share:(q_share+q_x)]
+            params_n = params[(q_share+q_x):(q_share+q_x+q_n)]
+            y_calc_x = Calc_x(x,params_x,share)
+            y_calc_n = Calc_n(x,params_n,share)
         else:
             #Stage 2:
             att_S2 += 1
             # Propose the candidate
             can_z2 = np.random.multivariate_normal(mean=z, cov=shrinkage*varS1)
             params2 = z2par(z=can_z2, lower=lower, upper=upper)  # Update params
-            share = params2[0:n_share]
-            params_x = params2[n_share:(n_share+n_x)]
-            params_n = params2[(n_share+n_x):(n_share+n_x+n_n)]
-            y_calc_x2 = Calc.CalcSin(x,params_x,share)
-            y_calc_n2 = Calc.CalcCos(x,params_n,share)
+            share = params2[0:q_share]
+            params_x = params2[q_share:(q_share+q_x)]
+            params_n = params2[(q_share+q_x):(q_share+q_x+q_n)]
+            y_calc_x2 = Calc_x(x,params_x,share)
+            y_calc_n2 = Calc_n(x,params_n,share)
             #print "can_z2:", can_z2
             if np.sum(np.abs(can_z2) > 3)==0:
                 can2_ll = logf(y_x=y_x, y_n=y_n, x=x, BG_x=BG_x, BG_n=BG_n, y_calc_x=y_calc_x2, y_calc_n=y_calc_n2, paramList=paramList, z=can_z2, lower=lower, upper=upper, scale_x=var_scale_x, scale_n=var_scale_n, tau_y_x=tau_y_x, tau_y_n=tau_y_n, m0=m0, sd0=sd0)
@@ -305,11 +309,11 @@ def nlDRAM(paramList, init_z, lower, upper, y_x=None, y_n=None, x=None, L=20, sh
                     acc_S2 += 1
                     z = np.array(can_z2, copy=True)                # Update latent
                     params = z2par(z=z, lower=lower, upper=upper)  # Update params
-                    share = params[0:n_share]
-                    params_x = params[n_share:(n_share+n_x)]
-                    params_n = params[(n_share+n_x):(n_share+n_x+n_n)]
-                    y_calc_x = Calc.CalcSin(x,params_x,share)
-                    y_calc_n = Calc.CalcCos(x,params_n,share)
+                    share = params[0:q_share]
+                    params_x = params[q_share:(q_share+q_x)]
+                    params_n = params[(q_share+q_x):(q_share+q_x+q_n)]
+                    y_calc_x = Calc_x(x,params_x,share)
+                    y_calc_n = Calc_n(x,params_n,share)
                 del can_z2, can2_ll, inner_n, inner_d, numer, denom, R2
             else:
                 del can_z2
@@ -329,14 +333,16 @@ def nlDRAM(paramList, init_z, lower, upper, y_x=None, y_n=None, x=None, L=20, sh
         #del rate
 
         ## Update tau_y
-        #err_x = (y_x-BG_x-y_calc_x)/np.sqrt(var_scale_x)
-        #rate = d_y + 0.5*np.inner(err_x, err_x)
-        #tau_y_x = np.random.gamma(shape=(c_y + 0.5*n_x), scale=1/rate)
-        #del rate
-        #err_n = (y_n-BG_n-y_calc_n)/np.sqrt(var_scale_n)
-        #rate = d_y + 0.5*np.inner(err_n, err_n)
-        #tau_y_n = np.random.gamma(shape=(c_y + 0.5*n_n), scale=1/rate)
-        #del rate
+        err_x = (y_x-BG_x-y_calc_x)/np.sqrt(var_scale_x)
+        rate = d_y + 0.5*np.inner(err_x, err_x)
+        tau_y_x = np.random.gamma(shape=(c_y + 0.5*n_x), scale=1/rate)
+        #print 1/rate
+        #print (c_y+0.5*n_x)
+        del rate
+        err_n = (y_n-BG_n-y_calc_n)/np.sqrt(var_scale_n)
+        rate = d_y + 0.5*np.inner(err_n, err_n)
+        tau_y_n = np.random.gamma(shape=(c_y + 0.5*n_n), scale=1/rate)
+        del rate
 
         # ## Update b
         # att_b += 1
@@ -442,5 +448,5 @@ def nlDRAM(paramList, init_z, lower, upper, y_x=None, y_n=None, x=None, L=20, sh
     print (tock-tick)/60
     # Gather output into a tuple
     #output = (keep_params, varS1, keep_b_x, keep_b_n, 1.0/keep_tau_y_x, 1.0/keep_tau_y_n, keep_gamma_x, keep_gamma_n, (tock-tick)/60)
-    output = (keep_params, varS1)
+    output = (keep_params, varS1, keep_tau_y_x,keep_tau_y_n)
     return output
