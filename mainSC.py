@@ -84,7 +84,8 @@ plt.show()
 curr= 40000
 burn = 10000
 results = MCMC.nlDRAM(paramList=paramList, init_z=init_z, lower=lower,
-upper=upper, y_x=yx, y_n=yn, x=Calc.x, L=20, shrinkage=0.007, s_p=(2.4**2),
+upper=upper, y_x=yx, y_n=yn, x=Calc.x, q_share=2, q_x=1, q_n=1, L=20,
+shrinkage=0.007, s_p=(2.4**2),
 epsilon=1e-10, m0=0, sd0=1, c_y=0.1, d_y=0.1, c_g=1, d_g=1, c_b=0.1,
 d_b=0.1, adapt=200, thin=1, iters=curr, burn=burn, update=1000, plot=False, fix=False)
 

@@ -46,7 +46,7 @@ def prior_loglike(par, m0, sd0):
     return -0.5*(sd0**(-2))*np.inner(par-m0, par-m0)
 
 # Log of the posterior distribution
-def logf(y_x,y_n, x, BG_x,BG_n, y_calc_x, y_calc_n, paramList, z, lower, upper, scale_x, scale_n, tau_y_x, tau_y_n, m0, sd0,q_share=1,q_x=2,q_n=2):
+def logf(y_x,y_n, x, BG_x,BG_n, y_calc_x, y_calc_n, paramList, z, lower, upper, scale_x, scale_n, tau_y_x, tau_y_n, m0, sd0,q_share=2,q_x=1,q_n=1):
     # Update the calculator to reflect the current parameter estimates
     params = z2par(z=z, lower=lower, upper=upper)
     share = params[0:q_share]
@@ -65,7 +65,7 @@ def logf(y_x,y_n, x, BG_x,BG_n, y_calc_x, y_calc_n, paramList, z, lower, upper, 
     return (-1)*(l_x+l_n-prior_loglike(par=z,m0=m0,sd0=sd0))
 
 ## MCMC function
-def nlDRAM(paramList, init_z, lower, upper, y_x=None, y_n=None, x=None, L=20, shrinkage=0.2, s_p=(2.4**2), epsilon=1e-4, m0=0, sd0=1, c_y=0.1, d_y=0.1, c_g=0.1, d_g=0.1, c_b=0.1, d_b=0.1, adapt=20, thin=1, iters=5000, burn=2000, update=500, plot=True, fix=False):
+def nlDRAM(paramList, init_z, lower, upper, y_x=None, y_n=None, x=None, q_share=2, q_x=1, q_n=1, L=20, shrinkage=0.2, s_p=(2.4**2), epsilon=1e-4, m0=0, sd0=1, c_y=0.1, d_y=0.1, c_g=0.1, d_g=0.1, c_b=0.1, d_b=0.1, adapt=20, thin=1, iters=5000, burn=2000, update=500, plot=True, fix=False):
     # Args:
     #   GPXfile - string, filepath for the GPX file underlying the current data
     #   paramList - (q x 1) list of GSASII parameter names in the same order as
@@ -145,9 +145,6 @@ def nlDRAM(paramList, init_z, lower, upper, y_x=None, y_n=None, x=None, L=20, sh
     n_n = len(y_n)
     q = len(init_z)  # Number of parameters of interest
 
-    q_share = 2
-    q_x = 1
-    q_n = 1
 
     # Smooth the observed Ys on the Xs, patch for negative or 0 values
     y_x_sm = lowess(endog=y_x, exog=x, frac=12.0/len(x), return_sorted=False)
